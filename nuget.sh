@@ -15,11 +15,18 @@ Description:
 
 Commands:
   commands
-    init <api-key>
+    init
       Description:
-        download nuget.exe and setup sources
+        download nuget.exe and setup a fresh NuGet.config in the working directory.
+
+    addSource <name> <url> [<user> <apikey>]
+      Description:
+        Add a source [and set the apikey for it if user and apikey passed]
       args:
-        api-key - The MyGet apikey for the quantum-build user
+        name: The name of the source
+        url: The url for the source
+        user: the user for the source
+        apikey: the apikey for the source
 
     restore
       Description:
@@ -32,10 +39,11 @@ Commands:
         version: The version to set for the nupkg
         nuspec a nuspec to pack
 
-    push [<nupkg> ...]
+    push <source> [<nupkg> ...]
       Description:
         push a nupkg or packages. If no nupkg is passed it is assumed that *.nupkg should be pushed
       args:
+        source: A nuget source to push to
         nupkg - a nupkg file to push
 EOF
 }
@@ -63,13 +71,13 @@ NUGET_CONFIG="./NuSpec.config"
 
 case "$COMMAND" in
   init)
-    if [ "$#" -ne 1 ]; then
-      echo "Invalid Params: Requires a api-key and nothing else" 1>&2
+    if [ "$#" -ne 0 ]; then
+      echo "Invalid Params: restore takes no arguments" 1>&2
       usage
       exit 1
     fi
+    
 
-    MYGET_API_KEY=$1
 
     cat > "$NUGET_CONFIG" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -80,8 +88,22 @@ case "$COMMAND" in
 </configuration>
 EOF
     curl -LO http://nuget.org/nuget.exe
-    mono nuget.exe sources add -Name "Castle-Development" -Source https://www.myget.org/F/castle-development/ -UserName quantum-build -Password "$MYGET_API_KEY" -ConfigFile "$NUGET_CONFIG"
-    mono nuget.exe setApiKey "$MYGET_API_KEY" -Source "Castle-Development" -ConfigFile "$NUGET_CONFIG" -NonInteractive 1>/dev/null
+    ;;
+
+  addSource)
+    if [ "$#" -ne 2 ] && [ "$#" -ne 4 ]; then
+      echo "Invalid Params: Requires at least a name and url and optionally both a username and apikey" 1>&2
+      usage
+      exit 1
+    fi
+
+    NAME="$1"
+    SOURCE="$2"
+    MYGET_USER="$3"
+    MYGET_API_KEY="$4"
+    mono nuget.exe sources add -Name "$NAME" -Source "$SOURCE" -UserName "$MYGET_USER" -Password "$MYGET_API_KEY" -ConfigFile "$NUGET_CONFIG"
+    # Hide the apikey output during the run of this command by redirecting to /dev/null
+    mono nuget.exe setApiKey "$MYGET_API_KEY" -Source "$SOURCE" -ConfigFile "$NUGET_CONFIG" -NonInteractive 1>/dev/null
     ;;
 
   restore)
@@ -105,19 +127,29 @@ EOF
     [ $# -eq 0 ] && nuspecs=*.nuspec
     for nuspec in $nuspecs; do
       echo "Packing $nuspec $VERSION"
-      TMP_FILE=`mktemp /tmp/config.XXXXXXXXXX`
-      sed 's/\[VERSION\]/'"$VERSION"'/' "$nuspec" > "$TMP_FILE"
-      mv "$TMP_FILE" "$nuspec"
-      mono nuget.exe pack "$nuspec"
+      TMP_FILE=`mktemp /tmp/XXXXXXXXXX`
+      NUSPEC="${TMP_FILE}.nuspec"
+      mv "$TMP_FILE" "$NUSPEC"
+      sed 's/\[VERSION\]/'"$VERSION"'/' "$nuspec" > "$NUSPEC"
+      mono nuget.exe pack "$NUSPEC" -BasePath .
     done
     ;;
 
   push)
+    if [ "$#" -ne 1 ]; then
+      echo "Invalid Params: push takes at least a source to push to" 1>&2
+      usage
+      exit 1
+    fi
+
+    SOURCE=$1
+    shift
+
     nupkgs="${@}"
     [ $# -eq 0 ] && nupkgs=*.nupkg
     for nupkg in $nupkgs; do
       echo "Pushing $nupkg"
-      mono nuget.exe push "$nupkg" -ConfigFile "$NUGET_CONFIG" -NonInteractive -Source "Castle-Development"
+      mono nuget.exe push "$nupkg" -ConfigFile "$NUGET_CONFIG" -NonInteractive -Source "$SOURCE"
     done
     ;;
 esac
