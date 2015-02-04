@@ -112,6 +112,7 @@ EOF
       usage
       exit 1
     fi
+    rm -rf packages
     mono nuget.exe restore -ConfigFile "$NUGET_CONFIG" -NonInteractive
     ;;
 
