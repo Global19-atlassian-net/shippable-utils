@@ -8,11 +8,16 @@
 require 'octokit'
 require 'optparse'
 require 'find'
+require 'ostruct'
 
 access_token = ENV['GITHUB_TOKEN']
 
-# Should show help?
-help = false
+options = OpenStruct.new(
+  :help => false,
+  :draft => false,
+  :prerelease => false,
+  :body => ''
+)
 
 # Parse options
 opts = OptionParser.new
@@ -25,7 +30,16 @@ opts.separator 'Description:
 opts.separator ''
 opts.separator 'Options:'
 opts.on('-h', '--help', 'Print out this help text') do
-  help = true
+  options.help = true
+end
+opts.on('--pre', 'Sets this release to be a prerelease. Default is false.') do
+  options.prerelease = true
+end
+opts.on('--draft', 'Sets this release to be a draft. Default is false.') do
+  options.draft = true
+end
+opts.on('--description DESCRIPTION', 'Sets the description (body) of the release. Default is empty') do |b|
+  options.body = b
 end
 opts.separator ''
 opts.separator 'Arguments:
@@ -47,6 +61,13 @@ rescue OptionParser::InvalidOption => e
   exit 1
 end
 
+if options.help
+  puts opts
+  exit 1
+end
+
+puts "Options: #{options.inspect}"
+
 repo_name, branch, asset_path = ARGV
 
 if ARGV.length != 3
@@ -57,10 +78,6 @@ if ARGV.length != 3
   exit 1
 end
 
-if help
-  puts opts
-  exit 1
-end
 
 if access_token.nil?
   STDERR.puts "Missing GITHUB_TOKEN environment variable"
@@ -83,7 +100,7 @@ octokit = Octokit::Client.new(:access_token => access_token)
 # create the draft releast if not already created.
 release = octokit.releases(repo_name).find {|r| r.tag_name == branch }
 if release.nil?
-  release = octokit.create_release(repo_name, branch, :draft => true, :name => branch, :body => "Release Draft")
+  release = octokit.create_release(repo_name, branch, :draft => options.draft, :prerelease => options.prerelease, :name => branch)
 end
 
 files = []
