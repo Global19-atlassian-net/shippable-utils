@@ -17,11 +17,27 @@ help = false
 # Parse options
 opts = OptionParser.new
 opts.banner = "Usage:\n  #{$0} [<options>] <repo_name> <branch> <asset_path>"
-opts.separator ""
-opts.separator "options:"
+opts.separator ''
+opts.separator 'Description:
+  Checks the branch name and if it is a semantic version,
+  create a new github draft release in the specified repo and uploads
+  assets from the specified path.'
+opts.separator ''
+opts.separator 'Options:'
 opts.on('-h', '--help', 'Print out this help text') do
   help = true
 end
+opts.separator ''
+opts.separator 'Arguments:
+  repo_name - the name of the repo in the form user/repo. e.g. trovalds/linux
+  branch - the name of the branch. e.g. master or 1.0.3-alpha.4+build.6
+  asset_path - a path to the binary assets to be uploaded'
+opts.separator ''
+opts.separator 'Environment:
+  GITHUB_TOKEN - github oauth token'
+opts.separator ''
+opts.separator 'Examples:
+  github-release trovalds/linux 4.90.23 ./builds'
 
 begin
   opts.parse!
