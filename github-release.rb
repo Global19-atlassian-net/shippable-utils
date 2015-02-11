@@ -66,8 +66,6 @@ if options.help
   exit 1
 end
 
-puts "Options: #{options.inspect}"
-
 repo_name, branch, asset_path = ARGV
 
 if ARGV.length != 3
@@ -95,12 +93,21 @@ unless /^(\d+)\.(\d+)\.(\d+)(-([A-Za-z0-9\-\.]+))?(\+([A-Za-z0-9\-\.]+))?$/.matc
   exit 0
 end
 
+puts "Options: #{options.inspect} #{ {:repo_name => repo_name, :branch => branch, :asset_path => asset_path} }"
+
 octokit = Octokit::Client.new(:access_token => access_token)
 
 # create the draft releast if not already created.
 release = octokit.releases(repo_name).find {|r| r.tag_name == branch }
 if release.nil?
-  release = octokit.create_release(repo_name, branch, :draft => options.draft, :prerelease => options.prerelease, :name => branch)
+  puts "creating"
+  release = octokit.create_release(repo_name, branch, {
+    :draft => options.draft,
+    :prerelease => options.prerelease,
+    :name => branch,
+    :body => options.body
+  })
+  puts release.inspect
 end
 
 files = []
