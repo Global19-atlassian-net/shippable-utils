@@ -42,8 +42,8 @@ shift
 case "$COMMAND" in
   start)
     /usr/bin/mysqld_safe > /dev/null 2>&1 &
-    sleep 5
-    while ! nc -vz localhost 3306 &>/dev/null; do
+    sleep 1
+    while ! mysqladmin status &>/dev/null; do
       echo "Waiting for mysql to start..."
       sleep 5
     done
