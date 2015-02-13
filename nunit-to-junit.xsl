@@ -15,7 +15,7 @@
 		<testsuites>
 			<xsl:for-each select="//test-suite[@type='Namespace' or @type='SetUpFixture']/results/test-suite[@type='TestFixture'][1]">
 				<xsl:variable name="suitename">
-					<xsl:for-each select="ancestor::test-suite[@type='Namespace' or @type='SetUpFixture']">
+					<xsl:for-each select="ancestor::test-suite[@type='Namespace' or (@type='SetUpFixture' and not(parent::test-results))]">
 						<xsl:choose>
 							<xsl:when test="position() = 1"><xsl:value-of select="@name"/></xsl:when>
 							<xsl:otherwise>.<xsl:value-of select="@name"/></xsl:otherwise>
