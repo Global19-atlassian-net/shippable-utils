@@ -43,11 +43,19 @@ case "$COMMAND" in
   start)
     /usr/bin/mysqld_safe > /dev/null 2>&1 &
     sleep 1
-    while ! mysqladmin status &>/dev/null; do
+    started=false
+    for try in {1..10}; do
+      mysqladmin status &>/dev/null && started=true && break
       echo "Waiting for mysql to start..."
       sleep 5
     done
-    echo "mysql started successfully"
+    if $started; then
+      echo "mysql started successfully"
+    else
+      echo "mysql failed to start!" 1>&2
+      exit 1
+    fi
+
     mysql -u root -e "DROP USER 'test'@'localhost';" || true
     mysql -u root -e "FLUSH PRIVILEGES; CREATE USER 'test'@'localhost'; GRANT ALL PRIVILEGES ON *.* TO 'test'@'localhost' WITH GRANT OPTION;"
     ;;
