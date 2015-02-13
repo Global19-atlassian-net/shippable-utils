@@ -42,10 +42,13 @@ shift
 case "$COMMAND" in
   start)
     /usr/bin/mysqld_safe > /dev/null 2>&1 &
-    sleep 1
+    sleep 5
     started=false
     for try in {1..10}; do
-      mysqladmin --socket=/var/run/mysqld/mysqld.sock status &>/dev/null && started=true && break
+      if mysql -e "SELECT true" >/dev/null 2>&1; then
+        started=true
+        break
+      fi
       echo "Waiting for mysql to start..."
       sleep 5
     done
@@ -61,7 +64,7 @@ case "$COMMAND" in
     ;;
 
   stop)
-    mysqladmin --socket=/var/run/mysqld/mysqld.sock shutdown
+    mysqladmin shutdown
     ;;
 
   *)
