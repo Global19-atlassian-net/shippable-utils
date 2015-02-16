@@ -98,7 +98,13 @@ puts "Options: #{options.inspect} #{ {:repo_name => repo_name, :branch => branch
 octokit = Octokit::Client.new(:access_token => access_token)
 
 # create the draft releast if not already created.
-release = octokit.releases(repo_name).find {|r| r.tag_name == branch }
+begin
+  release = octokit.releases(repo_name).find {|r| r.tag_name == branch }
+rescue Octokit::NotFound => e
+  STDERR.puts "Could not find repo: #{repo_name}"
+  exit 1
+end
+
 if release.nil?
   puts "creating"
   release = octokit.create_release(repo_name, branch, {
