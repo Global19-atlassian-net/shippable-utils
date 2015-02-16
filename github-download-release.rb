@@ -30,8 +30,8 @@ opts.separator 'Options:'
 opts.on('-h', '--help', 'Print out this help text') do
   options.help = true
 end
-opts.on('--release', 'Sets the release to fetch the url from. Default is to select the latest release.') do
-  options.prerelease = true
+opts.on('--release RELEASE', 'Sets the release to fetch the url from. Default is to select the latest release.') do |release|
+  options.release = release
 end
 opts.separator ''
 opts.separator 'Arguments:
@@ -60,6 +60,7 @@ end
 repo_name, destination = ARGV
 
 if ARGV.length != 2
+  puts ARGV.inspect
   STDERR.puts "repo_name is required" unless repo_name
   STDERR.puts "destination is required" unless destination
   STDERR.puts opts
@@ -104,7 +105,7 @@ if release.assets.first.nil?
 end
 
 uri = URI(release.assets.first.url)
-
+puts "Downloading first asset from #{repo_name}#{':' + options.release if options.release} to #{destination}"
 open(uri, 'Accept' => 'application/octet-stream', :http_basic_authentication => ['quantum-build', access_token]) do |input|
   open destination, 'w' do |output|
     until input.eof?
@@ -112,19 +113,3 @@ open(uri, 'Accept' => 'application/octet-stream', :http_basic_authentication => 
     end
   end
 end
-
-# Net::HTTP.start(uri.host, uri.port, :use_ssl => true) do |http|
-#   req = Net::HTTP::Get.new(uri)
-#   req.basic_auth 'quantum-build', access_token
-#   req['Accept'] = 'application/octet-stream'
-# 
-#   http.request(req) do |response|
-#     puts response.inspect
-# 
-#     open destination, 'w' do |io|
-#       response.read_body do |chunk|
-#         io.write chunk
-#       end
-#     end
-#   end
-# end
