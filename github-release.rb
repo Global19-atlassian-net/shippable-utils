@@ -17,6 +17,7 @@ options = OpenStruct.new(
   :draft => false,
   :prerelease => false,
   :ignoreSemver => false,
+  :overwriteFiles => false,
   :body => ''
 )
 
@@ -44,6 +45,9 @@ opts.on('--description DESCRIPTION', 'Sets the description (body) of the release
 end
 opts.on('--ignore-semver', 'Proceed even if the branch is not a semver.') do
   options.ignoreSemver = true
+end
+opts.on('--overwrite-files', 'Upload assets even if a file by the same name is already uplaoded') do
+  options.overwriteFiles = true
 end
 opts.separator ''
 opts.separator 'Arguments:
@@ -136,9 +140,14 @@ files.each do |file|
   filename = File.basename(file)
 
   if existing_files.include?(filename)
-    STDERR.puts "Already uploaded file: #{filename}"
+    if options.overwriteFiles
+      puts "Overwriting #{file}"
+    else
+      STDERR.puts "Already uploaded file: #{filename}"
+      break;
+    end
   else
     puts "Uploading #{file}"
-    octokit.upload_asset(release.url, file, :name => filename)
   end
+  octokit.upload_asset(release.url, file, :name => filename)
 end
