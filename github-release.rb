@@ -16,6 +16,7 @@ options = OpenStruct.new(
   :help => false,
   :draft => false,
   :prerelease => false,
+  :ignoreSemver => false,
   :body => ''
 )
 
@@ -25,7 +26,7 @@ opts.banner = "Usage:\n  #{$0} [<options>] <repo_name> <branch> <asset_path>"
 opts.separator ''
 opts.separator 'Description:
   Checks the branch name and if it is a semantic version,
-  create a new github draft release in the specified repo and uploads
+  create a new github release in the specified repo and uploads
   assets from the specified path.'
 opts.separator ''
 opts.separator 'Options:'
@@ -40,6 +41,9 @@ opts.on('--draft', 'Sets this release to be a draft. Default is false.') do
 end
 opts.on('--description DESCRIPTION', 'Sets the description (body) of the release. Default is empty') do |b|
   options.body = b
+end
+opts.on('--ignore-semver', 'Proceed even if the branch is not a semver.') do
+  options.ignoreSemver = true
 end
 opts.separator ''
 opts.separator 'Arguments:
@@ -88,12 +92,10 @@ unless File.exists?(asset_path)
   exit 1
 end
 
-unless /^(\d+)\.(\d+)\.(\d+)(-([A-Za-z0-9\-\.]+))?(\+([A-Za-z0-9\-\.]+))?$/.match(branch)
+unless options.ignoreSemver or /^(\d+)\.(\d+)\.(\d+)(-([A-Za-z0-9\-\.]+))?(\+([A-Za-z0-9\-\.]+))?$/.match(branch)
   puts "Skipping github release from branch #{branch}."
   exit 0
 end
-
-puts "Options: #{options.inspect} #{ {:repo_name => repo_name, :branch => branch, :asset_path => asset_path} }"
 
 octokit = Octokit::Client.new(:access_token => access_token)
 
