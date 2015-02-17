@@ -142,6 +142,9 @@ files.each do |file|
   if existing_files.include?(filename)
     if options.overwriteFiles
       puts "Overwriting #{file}"
+
+      existing_asset = release.assets.find {|a| a.name == filename}
+      octokit.delete_release_asset(existing_asset.url)
     else
       STDERR.puts "Already uploaded file: #{filename}"
       break;
